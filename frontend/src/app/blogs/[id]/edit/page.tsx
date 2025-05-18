@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 export default function EditBlogPage() {
   const router = useRouter();
   const params = useParams();
-  const blogId = params.id as string; // From the folder structure [id]
+  const blogId = params.id as string;
 
   const [initialData, setInitialData] = useState<BlogPost | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +19,7 @@ export default function EditBlogPage() {
 
     const fetchBlogData = async () => {
       setIsLoading(true);
-      setError(null); // Reset error before new fetch
+      setError(null);
       try {
         const response = await fetch(`/api/blogs/${blogId}`);
         if (response.status === 404) {
@@ -31,9 +31,13 @@ export default function EditBlogPage() {
         }
         const data: BlogPost = await response.json();
         setInitialData(data);
-      } catch (err: any) {
+      } catch (err: unknown) { // 修改处
         console.error('Failed to load blog for editing:', err);
-        setError(err.message || 'An unexpected error occurred while fetching the post.');
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An unexpected error occurred while fetching the post.');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -62,10 +66,13 @@ export default function EditBlogPage() {
       alert('Blog post updated successfully!');
       router.push(`/blogs/${blogId}`);
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) { // 修改处
       console.error('Failed to update post:', error);
-      // The BlogForm component will display this error if re-thrown
-      throw error; 
+      if (error instanceof Error) {
+        throw error; // Re-throw to be caught by BlogForm or display its message
+      } else {
+        throw new Error('An unexpected error occurred while updating the post.');
+      }
     }
   };
 
@@ -78,7 +85,6 @@ export default function EditBlogPage() {
   }
 
   if (!initialData) {
-    // This path should ideally be covered by the error state if fetch fails (e.g. 404)
     return <p className="text-center py-10">Blog post not found or could not be loaded.</p>;
   }
 
@@ -87,4 +93,4 @@ export default function EditBlogPage() {
       <BlogForm onSubmit={handleEditPost} initialData={initialData} isEditMode={true} />
     </div>
   );
-} 
+}

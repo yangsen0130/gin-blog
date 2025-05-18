@@ -4,14 +4,12 @@ import { useState, FormEvent } from 'react';
 
 interface AuthFormProps {
   formType: 'login' | 'register';
-  // 更新 onSubmit 的类型，使其不再接收 email 参数
   onSubmit: (e: FormEvent<HTMLFormElement>, username?: string, password?: string) => Promise<void>;
 }
 
 export default function AuthForm({ formType, onSubmit }: AuthFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  // const [email, setEmail] = useState(''); // 移除 email state
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,10 +18,13 @@ export default function AuthForm({ formType, onSubmit }: AuthFormProps) {
     setIsLoading(true);
     setError(null);
     try {
-      // 不再区分 formType 来传递 email
       await onSubmit(e, username, password);
-    } catch (err: any) {
-      setError(err.message || `An error occurred during ${formType}.`);
+    } catch (err: unknown) { // 修改处
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(`An error occurred during ${formType}.`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -48,24 +49,6 @@ export default function AuthForm({ formType, onSubmit }: AuthFormProps) {
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
-      {/* 移除 email 输入框
-      {formType === 'register' && (
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
-        </div>
-      )}
-      */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
           Password

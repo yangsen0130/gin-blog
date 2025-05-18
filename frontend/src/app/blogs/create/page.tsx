@@ -23,12 +23,15 @@ export default function CreateBlogPage() {
 
       console.log('Post created:', data);
       alert('Blog post created successfully!');
-      router.push(`/blogs/${data.id}`); // Redirect to the newly created post
-      router.refresh(); // Refresh data on other pages
-    } catch (error: any) {
+      router.push(`/blogs/${data.id}`);
+      router.refresh();
+    } catch (error: unknown) { // 修改处
       console.error('Failed to create post:', error);
-      // The BlogForm component will display this error
-      throw error;
+      if (error instanceof Error) {
+        throw error; // Re-throw to be caught by BlogForm
+      } else {
+        throw new Error('An unexpected error occurred while creating the post.');
+      }
     }
   };
 
@@ -37,4 +40,4 @@ export default function CreateBlogPage() {
       <BlogForm onSubmit={handleCreatePost} />
     </div>
   );
-} 
+}

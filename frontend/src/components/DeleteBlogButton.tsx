@@ -22,18 +22,32 @@ export default function DeleteBlogButton({ blogId }: DeleteBlogButtonProps) {
       const response = await fetch(`/api/blogs/${blogId}`, {
         method: 'DELETE',
       });
-      const data = await response.json();
+      
+      // Check if response is ok AND if there's content to parse
+      // For DELETE, 204 No Content is common and has no body
+      if (response.status === 204) {
+        alert('Post deleted successfully!');
+        router.push('/blogs');
+        router.refresh();
+        return; // Early return for 204
+      }
+
+      const data = await response.json(); // Try to parse JSON only if not 204
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to delete post');
       }
 
-      alert('Post deleted successfully!');
-      router.push('/blogs'); // Redirect to blogs list
-      router.refresh(); // Refresh data on the blogs page
-    } catch (err: any) {
+      alert('Post deleted successfully!'); // For other success statuses like 200 with body
+      router.push('/blogs');
+      router.refresh();
+    } catch (err: unknown) { // 修改处
       console.error('Delete error:', err);
-      setError(err.message || 'Could not delete the post.');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Could not delete the post.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -51,4 +65,4 @@ export default function DeleteBlogButton({ blogId }: DeleteBlogButtonProps) {
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
     </>
   );
-} 
+}

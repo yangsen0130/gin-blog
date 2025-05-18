@@ -10,8 +10,6 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent<HTMLFormElement>, username?: string, password?: string) => {
     e.preventDefault();
     if (!username || !password) {
-      // This case should ideally be handled by AuthForm's internal state or validation
-      // but as a fallback:
       alert('Username and password are required.');
       return;
     }
@@ -30,13 +28,16 @@ export default function LoginPage() {
       }
 
       console.log('Login successful:', data);
-      alert('Login successful!'); // User feedback
-      router.push('/'); // Redirect to homepage or dashboard
-      router.refresh(); // Refresh server components, good for updating Navbar state if it depends on auth
-    } catch (error: any) {
+      alert('Login successful!');
+      router.push('/');
+      router.refresh();
+    } catch (error: unknown) { // 修改处
       console.error('Login error:', error);
-      // The AuthForm component will display the error message if its onSubmit throws an error
-      throw error; // Re-throw to be caught by AuthForm
+      if (error instanceof Error) {
+        throw error; // Re-throw to be caught by AuthForm
+      } else {
+        throw new Error('An unexpected error occurred during login.');
+      }
     }
   };
 
@@ -45,4 +46,4 @@ export default function LoginPage() {
       <AuthForm formType="login" onSubmit={handleLogin} />
     </div>
   );
-} 
+}

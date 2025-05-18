@@ -37,10 +37,12 @@ export default function BlogForm({ onSubmit, initialData, isEditMode = false }: 
 
     try {
       await onSubmit({ title, content });
-      // On successful submission, redirect or give feedback
-      // This will be handled by the page calling this form.
-    } catch (err: any) {
-      setError(err.message || `An error occurred while ${isEditMode ? 'updating' : 'creating'} the post.`);
+    } catch (err: unknown) { // 修改处
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(`An error occurred while ${isEditMode ? 'updating' : 'creating'} the post.`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +85,7 @@ export default function BlogForm({ onSubmit, initialData, isEditMode = false }: 
       <div className="flex justify-end space-x-3">
         <button
             type="button"
-            onClick={() => router.back()} // Go back to the previous page
+            onClick={() => router.back()}
             className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
             Cancel
@@ -98,4 +100,4 @@ export default function BlogForm({ onSubmit, initialData, isEditMode = false }: 
       </div>
     </form>
   );
-} 
+}
