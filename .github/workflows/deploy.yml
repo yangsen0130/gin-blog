@@ -12,7 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 用 SSH 连接你的服务器并执行命令
       - name: Deploy to CentOS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -21,6 +20,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            export GOPROXY=https://goproxy.cn,direct
+            export CGO_ENABLED=1
+            export GOOS=linux
+            export GOARCH=amd64
             cd /root/gin-nextjs-blog/backend
             git pull origin main
             /usr/local/go/bin/go build -o blog-backend
