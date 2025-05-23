@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'standalone',
   eslint: {
     // 重要提示：这允许生产构建成功完成，即使你的项目存在 ESLint 错误。
     // 建议在部署前确保代码质量。

@@ -1,0 +1,6 @@
+*.db
+*.db-journal
+*.log
+.git
+.vscode/
+gin_blog.db
