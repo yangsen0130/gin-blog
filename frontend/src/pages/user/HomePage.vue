@@ -14,7 +14,6 @@
         </div>
         <div class="header-right">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link v-if="!authStore.isAuthenticated" :to="{ name: 'UserRegister' }" class="nav-link">关于作者</router-link>
           <router-link v-if="authStore.isAuthenticated" :to="{ name: 'AdminDashboard' }" class="nav-link">管理后台</router-link>
           <button class="menu-btn">⋯</button>
         </div>

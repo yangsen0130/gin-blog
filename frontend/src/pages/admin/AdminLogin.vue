@@ -2,9 +2,9 @@
   <div class="login-container">
     <div class="login-form">
       <h2>管理员登录</h2>
-      <div v.if="registrationMessage" class="success-message">
+      <!-- <div v.if="registrationMessage" class="success-message"> // 此消息不再需要
         {{ registrationMessage }}
-      </div>
+      </div> -->
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="username">用户名:</label>
@@ -21,11 +21,9 @@
           {{ authStore.loading ? '登录中...' : '登录' }}
         </button>
       </form>
-      <p class="register-link">
+      <!-- <p class="register-link"> // 删除注册链接
         还没有账户? <router-link :to="{ name: 'UserRegister' }">立即注册</router-link>
-        <!-- 注意：后端目前只有一个注册接口，这里假设注册后也是通过此登录入口进入管理 -->
-        <!-- 如果有单独的用户注册页面，可以链接到那里 -->
-      </p>
+      </p> -->
     </div>
   </div>
 </template>
@@ -33,28 +31,22 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../../store/auth';
-import { useRoute } from 'vue-router';
+// import { useRoute } from 'vue-router'; // 不再需要 useRoute
 
 const username = ref('');
 const password = ref('');
 const authStore = useAuthStore();
-const route = useRoute();
-const registrationMessage = ref('');
+// const route = useRoute(); // 不再需要
+// const registrationMessage = ref(''); // 不再需要
 
 onMounted(() => {
-  if (route.query.registered === 'true') {
-    registrationMessage.value = '注册成功！现在您可以登录了。';
-  }
-  // 如果用户已登录，尝试直接跳转到 dashboard
-  // 这部分逻辑也可以放在路由守卫中更集中处理
-  // if (authStore.isAuthenticated) {
-  //   router.push({ name: 'AdminDashboard' });
+  // if (route.query.registered === 'true') { // 注册相关的逻辑不再需要
+  //   registrationMessage.value = '注册成功！现在您可以登录了。';
   // }
 });
 
 const handleLogin = async () => {
   await authStore.login({ username: username.value, password: password.value });
-  // 登录成功后的跳转已在 authStore action 中处理
 };
 </script>
 
@@ -124,7 +116,7 @@ const handleLogin = async () => {
   margin-bottom: 15px;
   font-size: 0.9em;
 }
-.success-message {
+/* .success-message { // 不再需要
   color: green;
   background-color: #e6ffed;
   border: 1px solid #b7ebc3;
@@ -132,9 +124,9 @@ const handleLogin = async () => {
   border-radius: 4px;
   margin-bottom: 15px;
   font-size: 0.9em;
-}
-.register-link {
+} */
+/* .register-link { // 不再需要
   margin-top: 20px;
   font-size: 0.9em;
-}
+} */
 </style>
