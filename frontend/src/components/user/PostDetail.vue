@@ -22,12 +22,10 @@
         <div class="post-tags-section" v-if="post.tags && post.tags.length > 0">
           <strong>标签:</strong>
           <span v-for="tag in post.tags" :key="tag.ID" class="tag-chip">
-            <!-- 未来可以使标签可点击，链接到按此标签筛选的文章列表页面 -->
-            <!-- <router-link :to="{ name: 'PostsByTagPage', params: { tagName: tag.name } }">{{ tag.name }}</router-link> -->
             {{ tag.name }}
           </span>
         </div>
-        <div class="post-body" v-html="formatContent(post.content)"></div>
+        <div class="post-body" v-html="formattedContent"></div>
       </article>
       <div v-if="!post && !loading && !error" class="no-post-found-message">
         文章未加载或不存在。
@@ -40,6 +38,8 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { fetchPostById } from '../../api'; // 确保API路径正确
 import { useRoute } from 'vue-router';
+import { marked } from 'marked'; // 新增
+import hljs from 'highlight.js'; // 新增
 
 const props = defineProps({
   id: { // 从路由接收文章ID
@@ -79,12 +79,12 @@ const loadPost = async () => {
 
     if (response && response.data) {
       // 防止因快速导航导致旧数据覆盖新数据
-      if (postId.value === currentPostId) { 
+      if (postId.value === currentPostId) {
         post.value = response.data;
         if (!post.value || typeof post.value.title === 'undefined') {
           // API返回了数据，但数据不完整
           error.value = '获取到的文章数据不完整或为空。';
-          post.value = null; 
+          post.value = null;
         }
       }
     } else {
@@ -140,14 +140,33 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-// 格式化文章内容 (例如，将换行符转为<br>)
-const formatContent = (content) => {
-  if (!content) return '';
-  // 如果内容是Markdown，这里应该使用Markdown解析器
-  // 如果内容是纯文本且希望保留换行，则进行替换
-  // 如果内容已经是HTML，则直接返回
-  return content.replace(/\n/g, '<br />'); 
-};
+// 使用 marked 和 highlight.js 格式化文章内容
+const formattedContent = computed(() => {
+  if (!post.value || !post.value.content) return '';
+
+  marked.setOptions({
+    highlight: function(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+    langPrefix: 'hljs language-', // CSS 类名前缀，与 highlight.js 兼容
+    pedantic: false,
+    gfm: true,
+    breaks: false,
+    sanitize: false, // 注意：如果您的 Markdown 内容可能来自不受信任的源，请考虑使用 DOMPurify 等库进行HTML清理
+    smartypants: false,
+    xhtml: false
+  });
+
+  return marked(post.value.content);
+});
+// const formatContent = (content) => { //
+//   if (!content) return ''; //
+//   // 如果内容是Markdown，这里应该使用Markdown解析器 //
+//   // 如果内容是纯文本且希望保留换行，则进行替换 //
+//   // 如果内容已经是HTML，则直接返回 //
+//   return content.replace(/\n/g, '<br />');  //
+// }; //
 </script>
 
 <style scoped>
@@ -164,7 +183,7 @@ const formatContent = (content) => {
   font-size: 1rem;
   color: #007bff;
   text-decoration: none;
-  margin-left: 5%; 
+  margin-left: 5%;
 }
 .back-link:hover {
   text-decoration: underline;
@@ -172,7 +191,7 @@ const formatContent = (content) => {
 
 .container {
   width: 90%;
-  max-width: 800px; 
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -189,11 +208,11 @@ const formatContent = (content) => {
   border: 1px solid #ef9a9a;
   padding: 10px;
   border-radius: 4px;
-  margin: 20px auto; 
-  width: fit-content; 
+  margin: 20px auto;
+  width: fit-content;
   max-width: 90%;
-  text-align: left; 
-  word-break: break-all; 
+  text-align: left;
+  word-break: break-all;
 }
 
 .card {
@@ -261,13 +280,73 @@ const formatContent = (content) => {
 }
 
 /* 使用 :deep() 选择器来确保 v-html 插入的内容中的元素也能应用样式 */
-.post-body :deep(p) { 
+.post-body :deep(p) {
   margin-bottom: 1.5em;
+}
+.post-body :deep(h1) {
+  font-size: 2em;
+  margin-top: 1.5em;
+  margin-bottom: 0.8em;
 }
 .post-body :deep(h2) {
   font-size: 1.8rem;
   margin-top: 2em;
   margin-bottom: 1em;
 }
-/* ... 可以为其他通过 v-html 插入的HTML元素添加样式 ... */
+.post-body :deep(h3) {
+  font-size: 1.5em;
+  margin-top: 1.5em;
+  margin-bottom: 0.8em;
+}
+.post-body :deep(ul),
+.post-body :deep(ol) {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+.post-body :deep(li) {
+  margin-bottom: 0.5em;
+}
+.post-body :deep(blockquote) {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid #ccc;
+  background-color: #f9f9f9;
+  color: #666;
+}
+.post-body :deep(pre) {
+  background-color: #f5f5f5;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 1.5em;
+}
+.post-body :deep(code) {
+  font-family: 'Courier New', Courier, monospace;
+}
+.post-body :deep(pre code.hljs) {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+  background: transparent;
+}
+.post-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+.post-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5em;
+}
+.post-body :deep(th),
+.post-body :deep(td) {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.post-body :deep(th) {
+  background-color: #f2f2f2;
+}
 </style>
