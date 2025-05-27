@@ -18,6 +18,15 @@
             最后更新: {{ formatDate(post.UpdatedAt) }}
           </span>
         </div>
+        <!-- 新增：显示文章标签区域 -->
+        <div class="post-tags-section" v-if="post.tags && post.tags.length > 0">
+          <strong>标签:</strong>
+          <span v-for="tag in post.tags" :key="tag.ID" class="tag-chip">
+            <!-- 未来可以使标签可点击，链接到按此标签筛选的文章列表页面 -->
+            <!-- <router-link :to="{ name: 'PostsByTagPage', params: { tagName: tag.name } }">{{ tag.name }}</router-link> -->
+            {{ tag.name }}
+          </span>
+        </div>
         <div class="post-body" v-html="formatContent(post.content)"></div>
       </article>
       <div v-if="!post && !loading && !error" class="no-post-found-message">
@@ -29,46 +38,32 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { fetchPostById } from '../../api';
+import { fetchPostById } from '../../api'; // 确保API路径正确
 import { useRoute } from 'vue-router';
 
 const props = defineProps({
-  id: {
-    type: [String, Number],
+  id: { // 从路由接收文章ID
+    type: [String, Number], // ID可能是字符串或数字
     required: true,
   },
 });
 
-const post = ref(null);
-const loading = ref(true);
-const error = ref(null);
-const route = useRoute();
+const post = ref(null); // 存储文章数据
+const loading = ref(true); // 加载状态
+const error = ref(null); // 错误信息
+const route = useRoute(); // Vue Router实例
 
-// postId 是一个计算属性，它会响应 props.id 或 route.params.id 的变化
+// 计算属性，确保postId是数字类型
 const postId = computed(() => {
-  const idVal = parseInt(props.id || route.params.id);
-  // console.log('[PostDetail] Computed postId:', idVal);
+  const idVal = parseInt(props.id || route.params.id); // 优先使用props.id，其次是route.params.id
   return idVal;
 });
 
-// 监视所有相关状态的变化
-// watch([post, loading, error], ([newPost, newLoading, newError], [oldPost, oldLoading, oldError]) => {
-//   console.log('[PostDetail] State Change Detected:');
-//   console.log('  New State:', { post: newPost, loading: newLoading, error: newError });
-//   console.log('  Old State:', { post: oldPost, loading: oldLoading, error: oldError });
-//   if (newPost && typeof newPost.title === 'undefined' && !newLoading) {
-//     console.warn('[PostDetail] Warning: Post object exists but title is undefined.', newPost);
-//   }
-//   console.log('  Condition for article (post && !loading):', (newPost && !newLoading));
-// }, { deep: true });
-
-
+// 加载文章数据的异步函数
 const loadPost = async () => {
-  const currentPostId = postId.value; // 获取当前的 postId 值
-  // console.log(`[PostDetail] loadPost called for postId: ${currentPostId}`);
+  const currentPostId = postId.value; // 获取当前计算出的postId
 
-  if (isNaN(currentPostId)) {
-    // console.error('[PostDetail] Invalid postId detected in loadPost:', currentPostId);
+  if (isNaN(currentPostId)) { // 验证postId是否有效
     error.value = "无效的文章ID。";
     loading.value = false;
     post.value = null;
@@ -77,88 +72,81 @@ const loadPost = async () => {
 
   loading.value = true;
   error.value = null;
-  post.value = null; // 在开始加载前显式重置 post
-  // console.log(`[PostDetail] Before fetch for postId ${currentPostId}:`, { loading: loading.value, error: error.value, post: post.value });
+  post.value = null; // 开始加载前重置文章数据
 
   try {
-    const response = await fetchPostById(currentPostId);
-    // console.log(`[PostDetail] API Response for postId ${currentPostId}:`, JSON.parse(JSON.stringify(response))); // 深拷贝打印
+    const response = await fetchPostById(currentPostId); // 调用API获取文章
 
     if (response && response.data) {
-      // 确保我们只在当前 postId 仍然匹配时更新 post
-      // 这可以防止因快速导航导致的旧数据覆盖新数据问题
-      if (postId.value === currentPostId) {
+      // 防止因快速导航导致旧数据覆盖新数据
+      if (postId.value === currentPostId) { 
         post.value = response.data;
         if (!post.value || typeof post.value.title === 'undefined') {
-          // console.warn(`[PostDetail] Post data for postId ${currentPostId} is null or lacks title after fetch. Response data:`, response.data);
+          // API返回了数据，但数据不完整
           error.value = '获取到的文章数据不完整或为空。';
-          post.value = null; // 确保 post 为 null
-        } else {
-          // console.log(`[PostDetail] Successfully set post for postId ${currentPostId}:`, JSON.parse(JSON.stringify(post.value)));
+          post.value = null; 
         }
-      } else {
-        // console.log(`[PostDetail] postId changed during fetch for ${currentPostId}. Current postId is ${postId.value}. Discarding fetched data.`);
       }
     } else {
-      // console.error(`[PostDetail] API response or response.data is null/undefined for postId ${currentPostId}.`);
+      // API未返回有效数据
       if (postId.value === currentPostId) {
         error.value = '未能获取有效文章数据。';
         post.value = null;
       }
     }
   } catch (err) {
-    // console.error(`[PostDetail] API Error for postId ${currentPostId}:`, err.response || err.message || err);
+    // API请求失败
     if (postId.value === currentPostId) {
       error.value = `加载文章详情失败: ${err.response?.data?.error || err.message}`;
-      if (err.response?.status === 404) {
+      if (err.response?.status === 404) { // 特定处理404错误
         error.value = '文章未找到。';
       }
       post.value = null;
     }
   } finally {
-    // 仅当 postId 未改变时才设置 loading 为 false，以避免旧的 finally 块影响新的加载状态
+    // 确保仅当postId未改变时才更新加载状态
     if (postId.value === currentPostId) {
       loading.value = false;
     }
-    // console.log(`[PostDetail] Finally block for postId ${currentPostId}. Current loading state: ${loading.value}`);
-    // console.log('  Final state in finally:', { postId: postId.value, loading: loading.value, error: error.value, post: JSON.parse(JSON.stringify(post.value)) });
   }
 };
 
-// 监视 postId 的变化，如果变化则重新加载文章
+// 监视postId的变化，如果变化则重新加载文章
 watch(postId, (newId, oldId) => {
-  // console.log(`[PostDetail] Watcher: postId changed from ${oldId} to ${newId}`);
-  if (newId !== oldId && !isNaN(newId)) { // 确保 newId 有效且已改变
+  if (newId !== oldId && !isNaN(newId)) { // ID有效且发生变化
     loadPost();
-  } else if (isNaN(newId)) {
-    // console.error('[PostDetail] Watcher: new postId is NaN. Clearing data.');
+  } else if (isNaN(newId)) { // 新ID无效
     post.value = null;
     error.value = '无效的文章ID参数。';
     loading.value = false;
   }
-}, { immediate: false }); // onMounted 会进行首次加载，所以这里 immediate: false
+}, { immediate: false }); // onMounted会进行首次加载，所以这里不需要立即执行
 
+// 组件挂载时加载文章
 onMounted(() => {
-  // console.log('[PostDetail] Component mounted. Initial props.id:', props.id, 'Computed postId:', postId.value);
   if (!isNaN(postId.value)) {
     loadPost();
   } else {
     error.value = "文章ID无效 (onMounted)。";
     loading.value = false;
     post.value = null;
-    // console.error('[PostDetail] onMounted: postId is NaN. Not loading post.');
   }
 });
 
+// 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) return '';
   const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
+// 格式化文章内容 (例如，将换行符转为<br>)
 const formatContent = (content) => {
   if (!content) return '';
-  return content.replace(/\n/g, '<br />');
+  // 如果内容是Markdown，这里应该使用Markdown解析器
+  // 如果内容是纯文本且希望保留换行，则进行替换
+  // 如果内容已经是HTML，则直接返回
+  return content.replace(/\n/g, '<br />'); 
 };
 </script>
 
@@ -176,7 +164,7 @@ const formatContent = (content) => {
   font-size: 1rem;
   color: #007bff;
   text-decoration: none;
-  margin-left: 5%; /* 与 container 对齐 */
+  margin-left: 5%; 
 }
 .back-link:hover {
   text-decoration: underline;
@@ -184,7 +172,7 @@ const formatContent = (content) => {
 
 .container {
   width: 90%;
-  max-width: 800px; /* 文章详情页内容区域可以窄一些 */
+  max-width: 800px; 
   margin: 0 auto;
 }
 
@@ -201,23 +189,22 @@ const formatContent = (content) => {
   border: 1px solid #ef9a9a;
   padding: 10px;
   border-radius: 4px;
-  margin: 20px auto; /* 居中显示 */
-  width: fit-content; /* 根据内容调整宽度 */
+  margin: 20px auto; 
+  width: fit-content; 
   max-width: 90%;
-  text-align: left; /* 确保错误信息左对齐 */
-  word-break: break-all; /* 防止长错误信息破坏布局 */
+  text-align: left; 
+  word-break: break-all; 
 }
 
 .card {
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 20px;
+  padding: 20px; /* card自身的padding */
 }
 
-.post-content {
-  /* 使用全局 .card 样式 */
-  padding: 30px;
+.post-content { /* article元素，作为card的子元素 */
+  padding: 30px; /* article内部的padding，可以根据需要调整或移除，若card的padding已足够 */
 }
 
 .post-content h1 {
@@ -230,29 +217,57 @@ const formatContent = (content) => {
 .post-meta-detail {
   font-size: 0.9rem;
   color: #6c757d;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 15px;
+  margin-bottom: 15px; /* 元信息和标签区域之间的间距 */
 }
 
 .post-meta-detail span {
   margin-right: 15px;
 }
 
+.post-tags-section { /* 标签区域样式 */
+  margin-bottom: 30px; /* 标签区域和正文之间的间距 */
+  padding-bottom: 15px; /* 标签区域底部的padding */
+  border-bottom: 1px solid #eee; /* 标签区域底部的分隔线 */
+  font-size: 0.9rem;
+}
+.post-tags-section strong { /* “标签:”文字的样式 */
+  margin-right: 8px;
+  color: #555;
+}
+.tag-chip { /* 单个标签的样式 */
+  display: inline-block;
+  background-color: #e9ecef; /* 标签背景色 */
+  color: #495057; /* 标签文字颜色 */
+  padding: 3px 8px; /* 标签内边距 */
+  border-radius: 12px; /* 标签圆角 */
+  margin-right: 8px; /* 标签右边距 */
+  margin-bottom: 5px; /* 标签底边距，用于换行时保持间距 */
+  font-size: 0.85rem;
+}
+.tag-chip a { /* 如果标签是链接 */
+  color: inherit; /* 继承父元素颜色 */
+  text-decoration: none; /* 去除下划线 */
+}
+.tag-chip a:hover {
+  text-decoration: underline; /* 鼠标悬停时显示下划线 */
+}
+
 .post-body {
   font-size: 1.1rem;
   line-height: 1.8;
   color: #333;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  word-wrap: break-word; /* 允许长单词换行 */
+  overflow-wrap: break-word; /* 同上，更现代的属性 */
 }
 
-.post-body ::v-deep(p) {
+/* 使用 :deep() 选择器来确保 v-html 插入的内容中的元素也能应用样式 */
+.post-body :deep(p) { 
   margin-bottom: 1.5em;
 }
-.post-body ::v-deep(h2) {
+.post-body :deep(h2) {
   font-size: 1.8rem;
   margin-top: 2em;
   margin-bottom: 1em;
 }
+/* ... 可以为其他通过 v-html 插入的HTML元素添加样式 ... */
 </style>
