@@ -13,7 +13,20 @@
         <label for="content">内容:</label>
         <textarea id="content" v-model="post.content" rows="10" required></textarea>
       </div>
-      <div class="form-group"> <!-- 新增标签输入区域 -->
+      <div class="form-group">
+        <label for="category">分类:</label>
+        <select id="category" v-model="selectedCategoryId" :disabled="!!newCategoryName">
+          <option :value="null">-- 选择分类 --</option>
+          <option v-for="categoryItem in categories" :key="categoryItem.ID" :value="categoryItem.ID">
+            {{ categoryItem.name }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="newCategoryName">或新建分类 (如果选择此项，将覆盖上方选择):</label>
+        <input type="text" id="newCategoryName" v-model="newCategoryName" placeholder="输入新分类名称" />
+      </div>
+      <div class="form-group">
         <label for="tags">标签 (用逗号分隔):</label>
         <input type="text" id="tags" v-model="tagsInput" placeholder="例如: 技术, Go, Vue" />
       </div>
@@ -29,81 +42,136 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { fetchPostById, updatePost as apiUpdatePost } from '../../api';
+import { ref, onMounted, watch } from 'vue';
+import { 
+  fetchPostById, 
+  updatePost as apiUpdatePost,
+  fetchCategories as apiFetchCategories,
+  createCategory as apiCreateCategory
+} from '../../api';
 import { useRouter, useRoute } from 'vue-router';
 
 const props = defineProps({
-  id: { // 从路由参数中获取文章ID
+  id: {
     type: String,
     required: true,
   },
 });
 
-const post = ref({ // 存储文章基本信息
+const post = ref({
   id: null,
   title: '',
   content: '',
-  // tags 字段将从API获取，并通过 tagsInput 进行编辑
 });
-const tagsInput = ref(''); // 用于用户编辑标签的字符串，以逗号分隔
-const initialLoading = ref(true); // 控制初始加载文章数据的状态
-const loadError = ref(null); // 存储加载文章数据时的错误信息
-const updateLoading = ref(false); // 控制更新文章时的加载状态
-const updateError = ref(null); // 存储更新文章时的错误信息
+const tagsInput = ref('');
+const categories = ref([]);
+const selectedCategoryId = ref(null);
+const newCategoryName = ref('');
+
+const initialLoading = ref(true);
+const loadError = ref(null);
+const updateLoading = ref(false);
+const updateError = ref(null);
 
 const router = useRouter();
-const route = useRoute(); // 也可以用 route.params.id 获取ID
+const route = useRoute();
+
+const loadCategories = async () => {
+  try {
+    const response = await apiFetchCategories();
+    categories.value = response.data;
+  } catch (err) {
+    loadError.value = (loadError.value ? loadError.value + '; ' : '') + '加载分类失败: ' + (err.response?.data?.error || err.message);
+  }
+};
 
 const loadPostData = async () => {
   initialLoading.value = true;
   loadError.value = null;
+  await loadCategories(); 
   try {
-    const postId = parseInt(props.id || route.params.id); // 确保ID是数字
+    const postId = parseInt(props.id || route.params.id);
     if (isNaN(postId)) {
       throw new Error("无效的文章ID");
     }
-    const response = await fetchPostById(postId); // 调用API获取文章详情
-    post.value = { ...response.data }; // 填充表单数据
+    const response = await fetchPostById(postId);
+    post.value = { ...response.data };
+    selectedCategoryId.value = response.data.category_id || null;
 
-    // 将获取到的标签对象数组转换为逗号分隔的字符串，用于输入框显示
     if (response.data.tags && Array.isArray(response.data.tags)) {
       tagsInput.value = response.data.tags.map(tag => tag.name).join(', ');
     } else {
-      tagsInput.value = ''; // 如果没有标签，则输入框为空
+      tagsInput.value = '';
     }
   } catch (err) {
-    loadError.value = '加载文章数据失败: ' + (err.response?.data?.error || err.message);
+    loadError.value = (loadError.value ? loadError.value + '; ' : '') + '加载文章数据失败: ' + (err.response?.data?.error || err.message);
   } finally {
     initialLoading.value = false;
   }
 };
 
+watch(() => props.id, () => {
+    loadPostData();
+}, { immediate: true });
+
+
 const handleUpdatePost = async () => {
   updateLoading.value = true;
   updateError.value = null;
-  try {
-    const { ID, title, content } = post.value; // 获取文章ID、标题和内容
+  let categoryIdToSubmit = selectedCategoryId.value;
+  let setCategoryFlag = true;
 
-    // 解析标签输入框的字符串，转换为标签名数组
+
+  try {
+    if (newCategoryName.value.trim() !== '') {
+      try {
+        const newCategoryResponse = await apiCreateCategory({ name: newCategoryName.value.trim() });
+        categoryIdToSubmit = newCategoryResponse.data.ID;
+      } catch (catErr) {
+         if (catErr.response && catErr.response.status === 409) { // Conflict, category already exists
+             categoryIdToSubmit = catErr.response.data.category.ID;
+             updateError.value = `分类 "${newCategoryName.value.trim()}" 已存在，将使用现有分类。`;
+          } else {
+            updateError.value = '创建新分类失败: ' + (catErr.response?.data?.error || catErr.message);
+            updateLoading.value = false;
+            return;
+          }
+      }
+    } else if (selectedCategoryId.value === null && post.value.category_id === null) {
+        setCategoryFlag = false; // No change from null to null
+    } else if (selectedCategoryId.value !== null && selectedCategoryId.value === post.value.category_id) {
+        setCategoryFlag = false; // No change if category is the same
+    }
+
+
     const tagsArray = tagsInput.value
       .split(',')
       .map(tag => tag.trim())
       .filter(tag => tag !== '');
     
-    // 准备发送到API的数据，包含标题、内容和处理后的标签数组
-    const updateData = { title, content, tags: tagsArray };
+    const updateData = {
+      title: post.value.title !== '' ? post.value.title : undefined,
+      content: post.value.content !== '' ? post.value.content : undefined,
+      tags: tagsInput.value !== '' ? tagsArray : undefined, // Send tags if input is not empty, allows clearing
+    };
+
+    if (setCategoryFlag) {
+        updateData.category_id = categoryIdToSubmit;
+        updateData.set_category = true;
+    }
     
-    await apiUpdatePost(ID, updateData); // 调用API更新文章
-    router.push({ name: 'AdminManagePosts' }); // 成功后跳转到文章管理页面
+    await apiUpdatePost(post.value.ID, updateData);
+    router.push({ name: 'AdminManagePosts' });
   } catch (err) {
-    updateError.value = '更新文章失败: ' + (err.response?.data?.error || err.message);
+    if (!updateError.value) {
+        updateError.value = '更新文章失败: ' + (err.response?.data?.error || err.message);
+    }
   } finally {
     updateLoading.value = false;
   }
 };
 
-onMounted(loadPostData); // 组件挂载后加载文章数据
+onMounted(loadPostData);
 </script>
 
 <style scoped>
@@ -122,7 +190,8 @@ onMounted(loadPostData); // 组件挂载后加载文章数据
   font-weight: bold;
 }
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%; 
   padding: 10px;
   border: 1px solid #ddd;

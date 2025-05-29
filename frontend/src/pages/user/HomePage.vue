@@ -23,8 +23,7 @@
     <!-- Banner 区域 -->
     <section class="hero-banner">
       <h2 class="hero-title">Yangsen's Blog</h2>
-<!--      <p class="hero-subtitle">- 兴来每独往，胜事空自知。</p>-->
-<!--      <p class="hero-description">人生得意须尽欢，莫使金樽空对月。</p>-->
+      
     </section>
 
     <!-- 主内容区域 -->
@@ -102,7 +101,6 @@ const error = ref(null);
 const searchQuery = ref('');
 const authStore = useAuthStore();
 
-// 计算精选文章（取最新的5篇）
 const featuredPosts = computed(() => {
   return [...posts.value].slice(0, 5);
 });
@@ -121,7 +119,6 @@ const loadPosts = async () => {
 };
 
 const handleSearch = () => {
-  // 实现搜索功能
   console.log('Search:', searchQuery.value);
 };
 
@@ -139,10 +136,30 @@ onMounted(loadPosts);
 <style scoped>
 .blog-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #ffffff;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* 顶部导航栏 */
+.blog-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70vh;
+  background: radial-gradient(
+      ellipse at 80% 20%,
+      rgba(120, 170, 255, 0.35) 0%,
+      rgba(170, 140, 255, 0.25) 40%,
+      rgba(240, 130, 220, 0.2) 75%,
+      rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(100px);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .blog-header {
   background-color: white;
   border-bottom: 1px solid #e5e5e5;
@@ -242,25 +259,18 @@ onMounted(loadPosts);
   padding: 4px 8px;
 }
 
-/* Banner 区域 */
 .hero-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background-color: transparent;
+  color: #1a1a1a;
   padding: 80px 20px;
   text-align: center;
   position: relative;
+  z-index: 1;
   overflow: hidden;
 }
 
 .hero-banner::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
-  transform: rotate(45deg);
+  display: none;
 }
 
 .hero-title {
@@ -271,27 +281,12 @@ onMounted(loadPosts);
   z-index: 1;
 }
 
-.hero-subtitle {
-  font-size: 1.25rem;
-  margin: 0 0 10px 0;
-  opacity: 0.9;
-  position: relative;
-  z-index: 1;
-}
-
-.hero-description {
-  font-size: 1.125rem;
-  margin: 0;
-  opacity: 0.8;
-  position: relative;
-  z-index: 1;
-}
-
-/* 主内容区域 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .content-wrapper {
@@ -301,7 +296,6 @@ onMounted(loadPosts);
   align-items: start;
 }
 
-/* 文章列表 */
 .posts-section {
   min-width: 0;
 }
@@ -322,7 +316,6 @@ onMounted(loadPosts);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* 侧边栏 */
 .sidebar {
   position: sticky;
   top: 84px;
@@ -331,7 +324,6 @@ onMounted(loadPosts);
   gap: 20px;
 }
 
-/* 个人信息卡片 */
 .profile-card {
   background: white;
   border-radius: 12px;
@@ -390,7 +382,6 @@ onMounted(loadPosts);
   color: #666;
 }
 
-/* 精选文章 */
 .featured-posts {
   background: white;
   border-radius: 12px;
@@ -475,7 +466,6 @@ onMounted(loadPosts);
   color: #999;
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
   .header-center {
     display: none;

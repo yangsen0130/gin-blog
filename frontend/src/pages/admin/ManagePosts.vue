@@ -5,13 +5,6 @@
       撰写新文章
     </router-link>
 
-    <div v.if="loading" class="loading-indicator">加载中...</div>
-    <div v.if="error" class="error-message">{{ error }}</div>
-
-    <div v.if="!loading && posts.length === 0 && !error" class="no-posts">
-      您还没有创建任何文章。
-    </div>
-
     <table v.if="!loading && posts.length > 0" class="posts-table">
       <thead>
       <tr>
