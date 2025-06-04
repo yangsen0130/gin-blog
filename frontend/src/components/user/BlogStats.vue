@@ -3,7 +3,7 @@
       <h3 class="stats-title">📊 博客统计</h3>
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-icon">❤️</div>
+          <div class="stat-icon">👍</div>
           <div class="stat-info">
             <div class="stat-value">{{ totalLikes.toLocaleString() }}</div>
             <div class="stat-label">总点赞数</div>

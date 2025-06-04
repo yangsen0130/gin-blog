@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(allowGuests bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -32,7 +32,25 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims.UserID) // Pass user ID to subsequent handlers
+		if claims.UserID != 0 {
+			c.Set("userID", claims.UserID)
+			c.Set("username", claims.Username)
+			c.Set("userType", "admin")
+		} else if claims.GuestUserID != 0 {
+			if !allowGuests {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Guest users are not permitted for this action"})
+				c.Abort()
+				return
+			}
+			c.Set("guestUserID", claims.GuestUserID)
+			c.Set("username", claims.Username)
+			c.Set("avatarURL", claims.AvatarURL)
+			c.Set("userType", "guest")
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token: Missing user identifier"})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }

@@ -25,7 +25,7 @@ func ConnectDatabase() {
 
 	fmt.Println("数据库连接成功打开")
 
-	err = database.AutoMigrate(&models.User{}, &models.Post{}, &models.Tag{}, &models.Category{})
+	err = database.AutoMigrate(&models.User{}, &models.Post{}, &models.Tag{}, &models.Category{}, &models.GuestUser{}, &models.Comment{})
 	if err != nil {
 		log.Fatal("数据库迁移失败!", err)
 	}

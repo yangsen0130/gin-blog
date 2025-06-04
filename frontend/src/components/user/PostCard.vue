@@ -26,7 +26,7 @@
           :class="{ liked: isLiked }"
           :disabled="likeLoading"
         >
-          <span class="like-icon">❤️</span>
+          <span class="like-icon">👍</span>
           <span class="like-count">{{ post.likes_count || 0 }}</span>
         </button>
       </div>
@@ -208,26 +208,34 @@ const toggleLike = async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: none;
+  background: transparent;
   border: 1px solid #e0e0e0;
-  border-radius: 0;
+  border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
   font-size: 13px;
   color: #666;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .like-button:hover {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
+  border-color: #007bff;
+  color: #007bff;
   transform: scale(1.05);
 }
 
 .like-button.liked {
-  border-color: #ff6b6b;
-  background-color: #ff6b6b;
+  border-color: #007bff;
+  background-color: #007bff;
   color: white;
+}
+
+.like-button.liked .like-icon {
+  filter: none;
+}
+
+.like-button:not(.liked) .like-icon {
+  filter: grayscale(100%);
 }
 
 .like-button:disabled {
@@ -238,6 +246,7 @@ const toggleLike = async () => {
 
 .like-icon {
   font-size: 14px;
+  transition: filter 0.3s ease;
 }
 
 .like-count {

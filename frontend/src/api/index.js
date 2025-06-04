@@ -27,7 +27,11 @@ apiClient.interceptors.response.use(
     error => {
         if (error.response && error.response.status === 401) {
             const authStore = useAuthStore();
-            authStore.logout();
+            // Only logout if it's not a guest session being established or if token is truly invalid
+            // This might need more nuanced handling depending on the error source
+            if (authStore.isAuthenticated) { // Avoid logging out if it's a guest just failing an op
+                 // authStore.logout(); // Potentially too aggressive
+            }
         }
         return Promise.reject(error);
     }
@@ -42,14 +46,20 @@ export const createPost = (postData) => apiClient.post('/posts', postData);
 export const updatePost = (id, postData) => apiClient.put(`/posts/${id}`, postData);
 export const deletePost = (id) => apiClient.delete(`/posts/${id}`);
 
-// 点赞相关API
 export const likePost = (id) => apiClient.post(`/posts/${id}/like`);
 export const unlikePost = (id) => apiClient.post(`/posts/${id}/unlike`);
 
 export const fetchCategories = () => apiClient.get('/categories');
 export const createCategory = (categoryData) => apiClient.post('/categories', categoryData);
 
-// 博客统计API
 export const fetchBlogStats = () => apiClient.get('/stats');
+
+// GitHub OAuth - This is a redirect, not an API call in the traditional sense
+export const GITHUB_LOGIN_URL = `${import.meta.env.VITE_API_BASE_URL}/auth/github/login`;
+
+// Comments API
+export const fetchCommentsByPostId = (postId) => apiClient.get(`/posts/${postId}/comments`);
+export const createComment = (postId, commentData) => apiClient.post(`/posts/${postId}/comments`, commentData);
+
 
 export default apiClient;
