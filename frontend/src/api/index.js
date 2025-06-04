@@ -42,7 +42,14 @@ export const createPost = (postData) => apiClient.post('/posts', postData);
 export const updatePost = (id, postData) => apiClient.put(`/posts/${id}`, postData);
 export const deletePost = (id) => apiClient.delete(`/posts/${id}`);
 
+// 点赞相关API
+export const likePost = (id) => apiClient.post(`/posts/${id}/like`);
+export const unlikePost = (id) => apiClient.post(`/posts/${id}/unlike`);
+
 export const fetchCategories = () => apiClient.get('/categories');
 export const createCategory = (categoryData) => apiClient.post('/categories', categoryData);
+
+// 博客统计API
+export const fetchBlogStats = () => apiClient.get('/stats');
 
 export default apiClient;

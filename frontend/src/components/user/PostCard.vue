@@ -19,17 +19,36 @@
           </span>
         </div>
       </div>
+      <div class="post-actions">
+        <button 
+          @click="toggleLike" 
+          class="like-button"
+          :class="{ liked: isLiked }"
+          :disabled="likeLoading"
+        >
+          <span class="like-icon">❤️</span>
+          <span class="like-count">{{ post.likes_count || 0 }}</span>
+        </button>
+      </div>
     </div>
   </article>
 </template>
 
 <script setup>
+import { ref } from 'vue';
+import { likePost, unlikePost } from '../../api';
+
 const props = defineProps({
   post: {
     type: Object,
     required: true,
   },
 });
+
+const emit = defineEmits(['postUpdated']);
+
+const isLiked = ref(false);
+const likeLoading = ref(false);
 
 const getExcerpt = (content) => {
   if (!content) return '';
@@ -45,20 +64,49 @@ const formatDate = (dateString) => {
     day: '2-digit'
   }).replace(/\//g, '-');
 };
+
+const toggleLike = async () => {
+  if (likeLoading.value) return;
+  
+  likeLoading.value = true;
+  try {
+    let response;
+    if (isLiked.value) {
+      response = await unlikePost(props.post.ID);
+      isLiked.value = false;
+    } else {
+      response = await likePost(props.post.ID);
+      isLiked.value = true;
+    }
+    
+    // 更新本地的点赞数
+    if (response.data && response.data.post) {
+      props.post.likes_count = response.data.post.likes_count;
+      emit('postUpdated', response.data.post);
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error);
+    // 如果失败，恢复状态
+    isLiked.value = !isLiked.value;
+  } finally {
+    likeLoading.value = false;
+  }
+};
 </script>
 
 <style scoped>
 .post-card {
-  background: white;
-  border-radius: 8px;
+  background: transparent;
+  border-radius: 0;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  border-bottom: 1px solid #e0e0e0;
   transition: all 0.3s ease;
 }
 
 .post-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: none;
+  transform: none;
 }
 
 .post-header {
@@ -100,6 +148,9 @@ const formatDate = (dateString) => {
 .post-footer {
   border-top: 1px solid #f0f0f0;
   padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .post-meta {
@@ -109,6 +160,7 @@ const formatDate = (dateString) => {
   font-size: 13px;
   color: #999;
   gap: 8px;
+  flex: 1;
 }
 
 .post-author {
@@ -136,7 +188,7 @@ const formatDate = (dateString) => {
   background-color: #f5f5f5;
   color: #666;
   font-size: 12px;
-  border-radius: 4px;
+  border-radius: 0;
   transition: all 0.2s;
 }
 
@@ -144,6 +196,54 @@ const formatDate = (dateString) => {
   background-color: #667eea;
   color: white;
   cursor: pointer;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.like-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 0;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.like-button:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  transform: scale(1.05);
+}
+
+.like-button.liked {
+  border-color: #ff6b6b;
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.like-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.like-icon {
+  font-size: 14px;
+}
+
+.like-count {
+  font-weight: 500;
+  min-width: 16px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -157,6 +257,16 @@ const formatDate = (dateString) => {
 
   .post-meta {
     font-size: 12px;
+  }
+
+  .post-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .post-actions {
+    align-self: flex-end;
   }
 }
 </style>

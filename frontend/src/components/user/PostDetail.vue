@@ -25,6 +25,21 @@
             {{ tag.name }}
           </span>
         </div>
+        
+        <!-- 点赞区域 -->
+        <div class="post-like-section">
+          <button 
+            @click="toggleLike" 
+            class="like-button-large"
+            :class="{ liked: isLiked }"
+            :disabled="likeLoading"
+          >
+            <span class="like-icon">❤️</span>
+            <span class="like-text">{{ isLiked ? '已点赞' : '点赞' }}</span>
+            <span class="like-count">({{ post.likes_count || 0 }})</span>
+          </button>
+        </div>
+        
         <div class="post-body" v-html="formattedContent"></div>
       </article>
       <div v-if="!post && !loading && !error" class="no-post-found-message">
@@ -36,7 +51,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { fetchPostById } from '../../api';
+import { fetchPostById, likePost, unlikePost } from '../../api';
 import { useRoute } from 'vue-router';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
@@ -52,6 +67,8 @@ const post = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const route = useRoute();
+const isLiked = ref(false);
+const likeLoading = ref(false);
 
 const postId = computed(() => {
   const idVal = parseInt(props.id || route.params.id);
@@ -101,6 +118,33 @@ const loadPost = async () => {
     if (postId.value === currentPostId) {
       loading.value = false;
     }
+  }
+};
+
+const toggleLike = async () => {
+  if (likeLoading.value) return;
+  
+  likeLoading.value = true;
+  try {
+    let response;
+    if (isLiked.value) {
+      response = await unlikePost(post.value.ID);
+      isLiked.value = false;
+    } else {
+      response = await likePost(post.value.ID);
+      isLiked.value = true;
+    }
+    
+    // 更新本地的点赞数
+    if (response.data && response.data.post) {
+      post.value.likes_count = response.data.post.likes_count;
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error);
+    // 如果失败，恢复状态
+    isLiked.value = !isLiked.value;
+  } finally {
+    likeLoading.value = false;
   }
 };
 
@@ -189,7 +233,7 @@ const formattedContent = computed(() => {
   background-color: #ffebee;
   border: 1px solid #ef9a9a;
   padding: 10px;
-  border-radius: 4px;
+  border-radius: 0;
   margin: 20px auto;
   width: fit-content;
   max-width: 90%;
@@ -198,10 +242,11 @@ const formattedContent = computed(() => {
 }
 
 .card {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
   padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .post-content {
@@ -240,7 +285,7 @@ const formattedContent = computed(() => {
   background-color: #e9ecef;
   color: #495057;
   padding: 3px 8px;
-  border-radius: 12px;
+  border-radius: 0;
   margin-right: 8px;
   margin-bottom: 5px;
   font-size: 0.85rem;
@@ -297,7 +342,7 @@ const formattedContent = computed(() => {
 .post-body :deep(pre) {
   background-color: #f5f5f5;
   padding: 1em;
-  border-radius: 4px;
+  border-radius: 0;
   overflow-x: auto;
   margin-bottom: 1.5em;
 }
@@ -329,5 +374,81 @@ const formattedContent = computed(() => {
 }
 .post-body :deep(th) {
   background-color: #f2f2f2;
+}
+
+.post-like-section {
+  margin: 30px 0;
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.like-button-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  border: none;
+  border-radius: 0;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: none;
+}
+
+.like-button-large:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.like-button-large.liked {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  box-shadow: none;
+}
+
+.like-button-large.liked:hover {
+  box-shadow: none;
+}
+
+.like-button-large:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.like-button-large .like-icon {
+  font-size: 18px;
+  animation: pulse 2s infinite;
+}
+
+.like-button-large.liked .like-icon {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.like-text {
+  font-size: 16px;
+}
+
+.like-count {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.2); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.2); }
+  70% { transform: scale(1); }
 }
 </style>

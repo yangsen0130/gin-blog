@@ -40,7 +40,7 @@ const logout = () => {
 .admin-header {
   background-color: #ffffff;
   padding: 15px 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: none;
   display: flex;
   justify-content: space-between;
   align-items: center;

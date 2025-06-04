@@ -294,3 +294,102 @@ func DeletePost(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "文章删除成功"})
 }
+
+// LikePost 增加文章点赞数
+func LikePost(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID格式"})
+		return
+	}
+
+	var post models.Post
+	if err := database.DB.First(&post, uint(id)).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章未找到"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查找文章失败"})
+		return
+	}
+
+	// 增加点赞数
+	if err := database.DB.Model(&post).UpdateColumn("likes_count", gorm.Expr("likes_count + ?", 1)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新点赞数失败"})
+		return
+	}
+
+	// 获取更新后的文章数据
+	if err := database.DB.Preload("User").Preload("Tags").Preload("Category").First(&post, uint(id)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取更新后的文章数据失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "点赞成功",
+		"post":    post,
+	})
+}
+
+// UnlikePost 减少文章点赞数
+func UnlikePost(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID格式"})
+		return
+	}
+
+	var post models.Post
+	if err := database.DB.First(&post, uint(id)).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章未找到"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查找文章失败"})
+		return
+	}
+
+	// 减少点赞数，但不能小于0
+	if err := database.DB.Model(&post).Where("likes_count > 0").UpdateColumn("likes_count", gorm.Expr("likes_count - ?", 1)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新点赞数失败"})
+		return
+	}
+
+	// 获取更新后的文章数据
+	if err := database.DB.Preload("User").Preload("Tags").Preload("Category").First(&post, uint(id)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取更新后的文章数据失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "取消点赞成功",
+		"post":    post,
+	})
+}
+
+// GetBlogStats 获取博客统计信息
+func GetBlogStats(c *gin.Context) {
+	var totalPosts int64
+	var totalLikes int64
+
+	// 获取文章总数
+	if err := database.DB.Model(&models.Post{}).Count(&totalPosts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章总数失败"})
+		return
+	}
+
+	// 获取总点赞数
+	if err := database.DB.Model(&models.Post{}).Select("COALESCE(SUM(likes_count), 0)").Scan(&totalLikes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取总点赞数失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total_posts": totalPosts,
+		"total_likes": totalLikes,
+		"total_views": 12580, // 这里可以后续实现真实的浏览量统计
+		"total_comments": 348, // 这里可以后续实现真实的评论统计
+	})
+}

@@ -18,6 +18,8 @@ func SetupRouter(r *gin.Engine) {
 		postRoutes.GET("", controllers.GetPosts)
 		postRoutes.GET("/tag/:tagName", controllers.GetPostsByTag)
 		postRoutes.GET("/:id", controllers.GetPost)
+		postRoutes.POST("/:id/like", controllers.LikePost)
+		postRoutes.POST("/:id/unlike", controllers.UnlikePost)
 
 		protectedPostRoutes := postRoutes.Group("")
 		protectedPostRoutes.Use(middlewares.AuthMiddleware())
@@ -37,5 +39,11 @@ func SetupRouter(r *gin.Engine) {
 		{
 			protectedCategoryRoutes.POST("", controllers.CreateCategory)
 		}
+	}
+
+	// 博客统计路由
+	statsRoutes := r.Group("/api/stats")
+	{
+		statsRoutes.GET("", controllers.GetBlogStats)
 	}
 }

@@ -1,35 +1,18 @@
 <template>
   <div class="blog-container">
-    <!-- 顶部导航栏 -->
-    <header class="blog-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="blog-title">Yangsen's Blog</h1>
-        </div>
-        <div class="header-center">
-          <div class="search-box">
-            <input type="text" placeholder="Search" v-model="searchQuery" @keyup.enter="handleSearch">
-            <span class="search-shortcut">⌘ K</span>
-          </div>
-        </div>
-        <div class="header-right">
-          <router-link to="/" class="nav-link">首页</router-link>
-          <router-link v-if="authStore.isAuthenticated" :to="{ name: 'AdminDashboard' }" class="nav-link">管理后台</router-link>
-          <button class="menu-btn">⋯</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Banner 区域 -->
     <section class="hero-banner">
-      <h2 class="hero-title">Yangsen's Blog</h2>
-      
+      <h2 class="hero-title"></h2>
     </section>
 
-    <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-wrapper">
-        <!-- 左侧文章列表 -->
+        <aside class="left-sidebar">
+          <div class="sticky-sidebar">
+            <BlogStats />
+            <TagCloud />
+          </div>
+        </aside>
+
         <div class="posts-section">
           <div v-if="loading" class="loading-indicator">正在加载文章...</div>
           <div v-if="error" class="error-message">{{ error }}</div>
@@ -42,46 +25,45 @@
           </div>
         </div>
 
-        <!-- 右侧边栏 -->
-        <aside class="sidebar">
-          <!-- 个人信息卡片 -->
-          <div class="profile-card">
-            <div class="profile-avatar">
-              <div class="avatar-placeholder">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                </svg>
+        <aside class="right-sidebar">
+          <div class="sticky-sidebar">
+            <div class="profile-card">
+              <div class="profile-avatar">
+                <div class="avatar-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+              <h3 class="profile-name">Yangsen</h3>
+              <div class="profile-stats">
+                <div class="stat-item">
+                  <div class="stat-value">{{ posts.length || 36 }}</div>
+                  <div class="stat-label">博客文章</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">4+</div>
+                  <div class="stat-label">本月更新</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">0+</div>
+                  <div class="stat-label">本周更新</div>
+                </div>
               </div>
             </div>
-            <h3 class="profile-name">Yangsen</h3>
-            <div class="profile-stats">
-              <div class="stat-item">
-                <div class="stat-value">{{ posts.length || 36 }}</div>
-                <div class="stat-label">博客文章</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">4+</div>
-                <div class="stat-label">本月更新</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">0+</div>
-                <div class="stat-label">本周更新</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- 精选文章 -->
-          <div class="featured-posts">
-            <h3 class="section-title">🔥 精选文章</h3>
-            <ul class="featured-list">
-              <li v-for="(post, index) in featuredPosts" :key="index" class="featured-item">
-                <span class="featured-number">{{ index + 1 }}</span>
-                <router-link :to="{ name: 'PostDetail', params: { id: post.ID } }" class="featured-link">
-                  {{ post.title }}
-                </router-link>
-                <span class="featured-date">{{ formatShortDate(post.CreatedAt) }}</span>
-              </li>
-            </ul>
+            <div class="featured-posts">
+              <h3 class="section-title">🔥 精选文章</h3>
+              <ul class="featured-list">
+                <li v-for="(post, index) in featuredPosts" :key="index" class="featured-item">
+                  <span class="featured-number">{{ index + 1 }}</span>
+                  <router-link :to="{ name: 'PostDetail', params: { id: post.ID } }" class="featured-link">
+                    {{ post.title }}
+                  </router-link>
+                  <span class="featured-date">{{ formatShortDate(post.CreatedAt) }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </aside>
       </div>
@@ -93,6 +75,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { fetchPosts } from '../../api';
 import PostCard from '../../components/user/PostCard.vue';
+import BlogStats from '../../components/user/BlogStats.vue';
+import TagCloud from '../../components/user/TagCloud.vue';
 import { useAuthStore } from '../../store/auth';
 
 const posts = ref([]);
@@ -151,8 +135,8 @@ onMounted(loadPosts);
   background: radial-gradient(
       ellipse at 80% 20%,
       rgba(120, 170, 255, 0.35) 0%,
-      rgba(170, 140, 255, 0.25) 40%,
-      rgba(240, 130, 220, 0.2) 75%,
+      rgba(140, 219, 255, 0.25) 40%,
+      rgba(135, 206, 250, 0.2) 75%,
       rgba(255, 255, 255, 0) 100%
   );
   filter: blur(100px);
@@ -161,7 +145,7 @@ onMounted(loadPosts);
 }
 
 .blog-header {
-  background-color: white;
+  background-color: transparent;
   border-bottom: 1px solid #e5e5e5;
   position: sticky;
   top: 0;
@@ -206,7 +190,7 @@ onMounted(loadPosts);
   width: 100%;
   padding: 8px 40px 8px 16px;
   border: 1px solid #e5e5e5;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 14px;
   background-color: #f5f5f5;
   transition: all 0.2s;
@@ -215,7 +199,7 @@ onMounted(loadPosts);
 .search-box input:focus {
   outline: none;
   border-color: #666;
-  background-color: white;
+  background-color: transparent;
 }
 
 .search-shortcut {
@@ -225,9 +209,9 @@ onMounted(loadPosts);
   transform: translateY(-50%);
   font-size: 12px;
   color: #999;
-  background-color: white;
+  background-color: transparent;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid #e5e5e5;
 }
 
@@ -282,7 +266,7 @@ onMounted(loadPosts);
 }
 
 .main-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 40px 20px;
   position: relative;
@@ -291,9 +275,22 @@ onMounted(loadPosts);
 
 .content-wrapper {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 280px 1fr 320px;
   gap: 40px;
   align-items: start;
+}
+
+.left-sidebar,
+.right-sidebar {
+  position: relative;
+}
+
+.sticky-sidebar {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .posts-section {
@@ -311,25 +308,19 @@ onMounted(loadPosts);
   text-align: center;
   padding: 40px;
   color: #666;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar {
-  position: sticky;
-  top: 84px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .profile-card {
-  background: white;
-  border-radius: 12px;
+  background: transparent;
+  border-radius: 0;
   padding: 30px;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .profile-avatar {
@@ -340,7 +331,7 @@ onMounted(loadPosts);
   width: 80px;
   height: 80px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -383,10 +374,11 @@ onMounted(loadPosts);
 }
 
 .featured-posts {
-  background: white;
-  border-radius: 12px;
+  background: transparent;
+  border-radius: 0;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .section-title {
@@ -420,7 +412,7 @@ onMounted(loadPosts);
   height: 24px;
   background-color: #f0f0f0;
   color: #666;
-  border-radius: 4px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -466,6 +458,16 @@ onMounted(loadPosts);
   color: #999;
 }
 
+@media (max-width: 1200px) {
+  .content-wrapper {
+    grid-template-columns: 1fr 320px;
+  }
+  
+  .left-sidebar {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .header-center {
     display: none;
@@ -480,7 +482,12 @@ onMounted(loadPosts);
     gap: 30px;
   }
 
-  .sidebar {
+  .left-sidebar,
+  .right-sidebar {
+    display: none;
+  }
+
+  .sticky-sidebar {
     position: static;
   }
 }
