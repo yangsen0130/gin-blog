@@ -116,9 +116,13 @@ router.beforeEach((to, from, next) => {
             return;
         }
         if (to.meta.requiresAdmin && !isAdmin) {
-            // If requires admin but user is not admin (e.g., guest), redirect or show error
-            // For now, redirecting to home, but a "Forbidden" page might be better.
-            next({ name: 'HomePage' });
+            // If requires admin but user is not admin (e.g., guest), clear session and redirect to admin login
+            // Directly clear auth state to avoid circular routing from logout() method
+            authStore.token = null;
+            authStore.user = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            next({ name: 'AdminLogin', query: { redirect: to.fullPath } });
             return;
         }
     }

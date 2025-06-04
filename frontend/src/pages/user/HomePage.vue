@@ -29,11 +29,7 @@
           <div class="sticky-sidebar">
             <div class="profile-card">
               <div class="profile-avatar">
-                <div class="avatar-placeholder">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                  </svg>
-                </div>
+                <img :src="avatarImage" alt="Yangsen's Avatar" class="avatar-image" />
               </div>
               <h3 class="profile-name">Yangsen</h3>
               <div class="profile-stats">
@@ -78,6 +74,7 @@ import PostCard from '../../components/user/PostCard.vue';
 import BlogStats from '../../components/user/BlogStats.vue';
 import TagCloud from '../../components/user/TagCloud.vue';
 import { useAuthStore } from '../../store/auth';
+import avatarImage from '../../assets/images/avatar.jpg';
 
 const posts = ref([]);
 const loading = ref(true);
@@ -327,21 +324,11 @@ onMounted(loadPosts);
   margin: 0 auto 20px;
 }
 
-.avatar-placeholder {
+.avatar-image {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  margin: 0 auto;
-}
-
-.avatar-placeholder svg {
-  width: 40px;
-  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .profile-name {
